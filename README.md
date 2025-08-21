@@ -1,0 +1,2 @@
+# Juego-mates
+Gane god
