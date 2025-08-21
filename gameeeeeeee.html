@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Atrapa la Tendencia</title>
+<style>
+  body { font-family: Arial, sans-serif; text-align: center; background: #f0f8ff; }
+  #inicio { margin-top: 20%; }
+  #tablero { display: grid; grid-template-columns: repeat(6, 50px); gap: 5px; justify-content: center; margin: 20px auto; }
+  .casilla { width: 50px; height: 50px; background: #ddd; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
+  .jugador { background: #4caf50; color: white; border-radius: 50%; width: 30px; height: 30px; line-height: 30px; }
+  #dado { margin: 20px; padding: 10px 20px; font-size: 18px; }
+  #preguntaBox { display: none; background: white; padding: 20px; margin: 20px; border: 2px solid #4caf50; border-radius: 10px; }
+  #temporizador { font-weight: bold; color: red; }
+</style>
+</head>
+<body>
+
+<audio id="musica" loop>
+  <source src="https://www.bensound.com/bensound-music/bensound-sunny.mp3" type="audio/mpeg">
+</audio>
+<audio id="sonidoDado" src="https://www.soundjay.com/buttons/sounds/button-09.mp3"></audio>
+<audio id="sonidoOk" src="https://www.soundjay.com/buttons/sounds/button-4.mp3"></audio>
+<audio id="sonidoFail" src="https://www.soundjay.com/buttons/sounds/button-10.mp3"></audio>
+
+<div id="inicio">
+  <h1>🎲 Atrapa la Tendencia 🎶</h1>
+  <button onclick="iniciarJuego()">Iniciar Juego</button>
+</div>
+
+<div id="juego" style="display:none;">
+  <div id="tablero"></div>
+  <button id="dado" onclick="lanzarDado()">🎲 Lanzar dado</button>
+  <div id="preguntaBox">
+    <p id="pregunta"></p>
+    <input type="text" id="respuesta" placeholder="Tu respuesta">
+    <button onclick="verificar()">Responder</button>
+    <p id="temporizador"></p>
+    <p id="explicacion"></p>
+  </div>
+</div>
+
+<script>
+const preguntas = [
+  { tipo: "media", datos: [12,15,18,10,20,17], respuesta: 15.33 },
+  { tipo: "mediana", datos: [12,13,14,16,18,19,20], respuesta: 16 },
+  { tipo: "moda", datos: [2,2,3,4,2,5,6], respuesta: 2 },
+  { tipo: "media", datos: [5,10,15,20,25], respuesta: 15 },
+  { tipo: "mediana", datos: [3,7,9,15,18,21], respuesta: 12 },
+  { tipo: "moda", datos: [7,8,8,9,10,8,11], respuesta: 8 }
+];
+let usadas = [];
+let posicion = 0;
+let timer, tiempo = 60;
+
+function iniciarJuego(){
+  document.getElementById("inicio").style.display="none";
+  document.getElementById("juego").style.display="block";
+  let musica = document.getElementById("musica");
+  musica.play();
+  let tablero = document.getElementById("tablero");
+  for(let i=1;i<=30;i++){
+    let casilla=document.createElement("div");
+    casilla.className="casilla";
+    casilla.innerText=i;
+    tablero.appendChild(casilla);
+  }
+  actualizarJugador();
+}
+
+function actualizarJugador(){
+  document.querySelectorAll(".jugador").forEach(j=>j.remove());
+  let casilla=document.querySelectorAll(".casilla")[posicion];
+  let jugador=document.createElement("div");
+  jugador.className="jugador";
+  jugador.innerText="P";
+  casilla.appendChild(jugador);
+}
+
+function lanzarDado(){
+  document.getElementById("sonidoDado").play();
+  if(usadas.length>=preguntas.length){ alert("Ya no hay más preguntas"); return;}
+  let pasos=Math.floor(Math.random()*6)+1;
+  posicion+=pasos;
+  if(posicion>=30){ alert("🎉 ¡Ganaste!"); posicion=29; }
+  actualizarJugador();
+  mostrarPregunta();
+}
+
+function mostrarPregunta(){
+  let pbox=document.getElementById("preguntaBox");
+  pbox.style.display="block";
+  document.getElementById("respuesta").value="";
+  document.getElementById("explicacion").innerText="";
+  let idx;
+  do{ idx=Math.floor(Math.random()*preguntas.length);}while(usadas.includes(idx));
+  usadas.push(idx);
+  pActual=preguntas[idx];
+  document.getElementById("pregunta").innerText=`Se quiere hallar la ${pActual.tipo}. Datos: ${pActual.datos.join(", ")}`;
+  tiempo=60;
+  document.getElementById("temporizador").innerText="Tiempo: 60s";
+  timer=setInterval(()=>{
+    tiempo--;
+    document.getElementById("temporizador").innerText=`Tiempo: ${tiempo}s`;
+    if(tiempo<=0){ clearInterval(timer); finPregunta(false); }
+  },1000);
+}
+
+function verificar(){
+  clearInterval(timer);
+  let r=parseFloat(document.getElementById("respuesta").value);
+  if(Math.abs(r-pActual.respuesta)<0.1){
+    document.getElementById("sonidoOk").play();
+    finPregunta(true);
+  }else{
+    document.getElementById("sonidoFail").play();
+    finPregunta(false);
+  }
+}
+
+function finPregunta(correcto){
+  let exp=document.getElementById("explicacion");
+  if(pActual.tipo=="media"){
+    let suma=pActual.datos.reduce((a,b)=>a+b,0);
+    exp.innerText=`Media: suma=${suma}, dividido entre ${pActual.datos.length} = ${pActual.respuesta}`;
+  }
+  if(pActual.tipo=="mediana"){
+    let orden=[...pActual.datos].sort((a,b)=>a-b);
+    exp.innerText=`Mediana: datos ordenados = [${orden.join(", ")}], resultado=${pActual.respuesta}`;
+  }
+  if(pActual.tipo=="moda"){
+    exp.innerText=`Moda: el número que más se repite es ${pActual.respuesta}`;
+  }
+}
+</script>
+</body>
+</html>
